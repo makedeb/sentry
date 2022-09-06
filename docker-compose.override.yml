@@ -1,0 +1,6 @@
+version: '3'
+services:
+  web:
+    labels:
+      - "traefik.http.routers.weblate.rule=Host(`sentry.makedeb.org`)"
+      - "traefik.enable=true"
