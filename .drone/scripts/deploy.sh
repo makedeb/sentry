@@ -11,6 +11,8 @@ if [[ -d "${deploy_dir}" ]]; then
     cd -
     rm "${deploy_dir}" -rf
     ! [[ -d "${deploy_dir}" ]]
+else
+    mkdir "${deploy_dir}"
 fi
 
 # Copy over files to the deploy directory.
