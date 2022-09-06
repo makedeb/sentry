@@ -14,7 +14,7 @@ if [[ -d "${deploy_dir}" ]]; then
 fi
 
 # Copy over files to the deploy directory.
-find ./ -mindepth 1 -maxdepth 1 -exec cp -v '{}' "${deploy_dir}/{}" \;
+find ./ -mindepth 1 -maxdepth 1 -exec cp -rv '{}' "${deploy_dir}/{}" \;
 cd "${deploy_dir}"
 
 # Build the project.
