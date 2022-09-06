@@ -10,6 +10,7 @@ if [[ -d "${deploy_dir}" ]]; then
     fi
     cd -
     rm "${deploy_dir}" -rf
+    mkdir "${deploy_dir}"
     ! [[ -d "${deploy_dir}" ]]
 else
     mkdir "${deploy_dir}"
