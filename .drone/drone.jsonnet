@@ -11,6 +11,7 @@ local deploy() = {
         name: "deploy",
         environment: {
             sentry_secret_key: {from_secret: "sentry_secret_key"},
+            sentry_mail_password: {from_secret: "sentry_mail_password"},
             sentry_github_app_id: {from_secret: "sentry_github_app_id"},
             sentry_github_app_webhook_secret: {from_secret: "sentry_github_app_webhook_secret"},
             sentry_github_app_client_id: {from_secret: "sentry_github_app_client_id"},

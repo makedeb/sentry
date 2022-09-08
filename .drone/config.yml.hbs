@@ -1,7 +1,12 @@
 mail.backend: 'smtp'
-mail.use-tls: true
-mail.use-ssl: false
+mail.host: 'mailcow.hunterwittenborn.com'
+mail.port: 465
+mail.username: 'sentry@makedeb.org'
+mail.password: '{{ env.sentry_mail_password }}'
+mail.use-tls: false
+mail.use-ssl: true
 mail.enable-replies: true
+mail.from: 'Sentry - Makedeb <sentry@makedeb.org>'
 
 # When email-replies are enabled, this value is used in the Reply-To header
 mail.reply-hostname: 'sentry@makedeb.org'
