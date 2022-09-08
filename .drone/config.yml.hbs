@@ -39,7 +39,7 @@ transaction-events.force-disable-internal-project: true
 ######################
 
 github-login.extended-permissions: ['repo']
-github-app.id: '{{ env.sentry_github_app_id }}'
+github-app.id: {{ env.sentry_github_app_id }}
 github-app.name: 'Sentry - makedeb'
 github-app.webhook-secret: '{{ env.sentry_github_app_webhook_secret }}'
 github-app.client-id: '{{ env.sentry_github_app_client_id }}'
