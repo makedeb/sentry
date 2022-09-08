@@ -16,6 +16,10 @@ else
     mkdir "${deploy_dir}"
 fi
 
+# Template out needed files.
+comb render .drone/config.yml.hbs > sentry/config.yml
+comb render .drone/sentry.conf.py.hbs > sentry/sentry.conf.py
+
 # Copy over files to the deploy directory.
 find ./ -mindepth 1 -maxdepth 1 -exec cp -rv '{}' "${deploy_dir}/{}" \;
 cd "${deploy_dir}"

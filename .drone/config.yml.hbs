@@ -1,0 +1,48 @@
+mail.backend: 'smtp'
+mail.use-tls: true
+mail.enable-replies: true
+
+# When email-replies are enabled, this value is used in the Reply-To header
+mail.reply-hostname: 'sentry@makedeb.org'
+
+###################
+# System Settings #
+###################
+
+# If this file ever becomes compromised, it's important to generate a new key.
+# Changing this value will result in all current sessions being invalidated.
+# A new key can be generated with `$ sentry config generate-secret-key`
+system.secret-key: '{{ env.sentry_secret_key }}'
+
+################
+# File storage #
+################
+
+# Uploaded media uses these `filestore` settings. The available
+# backends are either `filesystem` or `s3`.
+
+filestore.backend: 'filesystem'
+filestore.options:
+  location: '/data/files'
+dsym.cache-path: '/data/dsym-cache'
+releasefile.cache-path: '/data/releasefile-cache'
+
+system.internal-url-prefix: 'http://web:9000'
+symbolicator.enabled: true
+symbolicator.options:
+  url: "http://symbolicator:3021"
+
+transaction-events.force-disable-internal-project: true
+
+######################
+# GitHub Integration #
+######################
+
+github-login.extended-permissions: ['repo']
+github-app.id: '{{ env.sentry_github_app_id }}'
+github-app.name: 'Sentry - makedeb'
+github-app.webhook-secret: '{{ env.sentry_github_app_webhook_secret }}'
+github-app.client-id: '{{ env.sentry_github_app_client_id }}'
+github-app.client-secret: '{{ env.sentry_github_app_client_secret }}'
+github-app.private-key: |
+{{ env.sentry_github_app_private_key }}
