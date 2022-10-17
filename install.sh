@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -e
+set -eE
 
 # Pre-pre-flight? 🤷
 if [[ -n "$MSYSTEM" ]]; then
@@ -14,6 +14,8 @@ source parse-cli.sh
 source detect-platform.sh
 source dc-detect-version.sh
 source error-handling.sh
+# We set the trap at the top level so that we get better tracebacks.
+trap_with_arg cleanup ERR INT TERM EXIT
 source check-latest-commit.sh
 source check-minimum-requirements.sh
 
@@ -23,15 +25,11 @@ source create-docker-volumes.sh
 source ensure-files-from-examples.sh
 source ensure-relay-credentials.sh
 source generate-secret-key.sh
-source replace-tsdb.sh
 source update-docker-images.sh
 source build-docker-images.sh
-source set-up-zookeeper.sh
 source install-wal2json.sh
 source bootstrap-snuba.sh
 source create-kafka-topics.sh
-source upgrade-postgres.sh
 source set-up-and-migrate-database.sh
-source migrate-file-storage.sh
 source geoip.sh
 source wrap-up.sh
