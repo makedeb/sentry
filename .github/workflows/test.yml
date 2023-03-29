@@ -14,12 +14,25 @@ defaults:
   run:
     shell: bash
 jobs:
+  e2e-test:
+    runs-on: ubuntu-20.04
+    name: "Sentry self-hosted end-to-end tests"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          path: self-hosted
+      - name: End to end tests
+        uses: getsentry/action-self-hosted-e2e-tests@77805295ebff8a603def5970e18743ded72cb304
+        with:
+          project_name: self-hosted
+
   unit-test:
     runs-on: ubuntu-20.04
     name: "unit tests"
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Unit Tests
         run: ./unit-test.sh
@@ -44,7 +57,7 @@ jobs:
       COMPOSE_PROJECT_NAME: self-hosted-${{ strategy.job-index }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Get Compose
         run: |

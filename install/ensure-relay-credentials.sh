@@ -1,7 +1,7 @@
 echo "${_group}Ensuring Relay credentials ..."
 
-RELAY_CONFIG_YML="../relay/config.yml"
-RELAY_CREDENTIALS_JSON="../relay/credentials.json"
+RELAY_CONFIG_YML=relay/config.yml
+RELAY_CREDENTIALS_JSON=relay/credentials.json
 
 ensure_file_from_example $RELAY_CONFIG_YML
 
@@ -26,7 +26,7 @@ else
 
   $dc pull relay
   creds="$dcr --no-deps -T relay credentials"
-  $creds generate --stdout > "$RELAY_CREDENTIALS_JSON".tmp
+  $creds generate --stdout >"$RELAY_CREDENTIALS_JSON".tmp
   mv "$RELAY_CREDENTIALS_JSON".tmp "$RELAY_CREDENTIALS_JSON"
   if ! grep -q Credentials <($creds show); then
     # Let's fail early if creds failed, to make debugging easier.

@@ -70,6 +70,7 @@ x-sentry-defaults: &sentry_defaults
     # on the host system (or in the .env file)
     SENTRY_EVENT_RETENTION_DAYS:
     SENTRY_MAIL_HOST:
+    SENTRY_MAX_EXTERNAL_SOURCEMAP_SIZE:
   volumes:
     - "sentry-data:/data"
     - "./sentry:/etc/sentry"
@@ -86,7 +87,7 @@ x-snuba-defaults: &snuba_defaults
       <<: *depends_on-healthy
   image: "$SNUBA_IMAGE"
   environment:
-    SNUBA_SETTINGS: docker
+    SNUBA_SETTINGS: self_hosted
     CLICKHOUSE_HOST: clickhouse
     DEFAULT_BROKERS: "kafka:9092"
     REDIS_HOST: redis
@@ -106,13 +107,14 @@ services:
   memcached:
     <<: *restart_policy
     image: "memcached:1.6.9-alpine"
+    command: ["-I", "${SENTRY_MAX_EXTERNAL_SOURCEMAP_SIZE:-1M}"]
     healthcheck:
       <<: *healthcheck_defaults
       # From: https://stackoverflow.com/a/31877626/5155484
       test: echo stats | nc 127.0.0.1 11211
   redis:
     <<: *restart_policy
-    image: "redis:6.2.4-alpine"
+    image: "redis:6.2.10-alpine"
     healthcheck:
       <<: *healthcheck_defaults
       test: redis-cli ping
@@ -150,7 +152,7 @@ services:
         target: /opt/sentry/
   zookeeper:
     <<: *restart_policy
-    image: "confluentinc/cp-zookeeper:5.5.0"
+    image: "confluentinc/cp-zookeeper:5.5.7"
     environment:
       ZOOKEEPER_CLIENT_PORT: "2181"
       CONFLUENT_SUPPORT_METRICS_ENABLE: "false"
@@ -170,7 +172,7 @@ services:
     depends_on:
       zookeeper:
         <<: *depends_on-healthy
-    image: "confluentinc/cp-kafka:5.5.0"
+    image: "confluentinc/cp-kafka:5.5.7"
     environment:
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
       KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
@@ -190,12 +192,14 @@ services:
     healthcheck:
       <<: *healthcheck_defaults
       test: ["CMD-SHELL", "nc -z localhost 9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
   clickhouse:
     <<: *restart_policy
     image: clickhouse-self-hosted-local
     build:
-      context:
-        ./clickhouse
+      context: ./clickhouse
       args:
         BASE_IMAGE: "${CLICKHOUSE_IMAGE:-}"
     ulimits:
@@ -215,17 +219,16 @@ services:
       # You might want to change this to a higher value (and ensure your host has enough memory)
       MAX_MEMORY_USAGE_RATIO: 0.3
     healthcheck:
-      test:
-        [
+      test: [
           "CMD-SHELL",
           # Manually override any http_proxy envvar that might be set, because
           # this wget does not support no_proxy. See:
           # https://github.com/getsentry/self-hosted/issues/1537
           "http_proxy='' wget -nv -t1 --spider 'http://localhost:8123/' || exit 1",
         ]
-      interval: 3s
-      timeout: 600s
-      retries: 200
+      interval: 10s
+      timeout: 10s
+      retries: 30
   geoipupdate:
     image: "maxmindinc/geoipupdate:v4.7.1"
     # Override the entrypoint in order to avoid using envvars for config.
@@ -254,32 +257,22 @@ services:
   # Kafka consumer responsible for feeding transactions data into Clickhouse
   snuba-transactions-consumer:
     <<: *snuba_defaults
-    command: consumer --storage transactions --consumer-group transactions_group --auto-offset-reset=latest --max-batch-time-ms 750 --commit-log-topic=snuba-commit-log
+    command: consumer --storage transactions --consumer-group transactions_group --auto-offset-reset=latest --max-batch-time-ms 750
+  snuba-replays-consumer:
+    <<: *snuba_defaults
+    command: consumer --storage replays --auto-offset-reset=latest --max-batch-time-ms 750
   snuba-replacer:
     <<: *snuba_defaults
-    command: replacer --storage errors --auto-offset-reset=latest --max-batch-size 3
+    command: replacer --storage errors --auto-offset-reset=latest
   snuba-subscription-consumer-events:
     <<: *snuba_defaults
     command: subscriptions-scheduler-executor --dataset events --entity events --auto-offset-reset=latest --no-strict-offset-reset --consumer-group=snuba-events-subscriptions-consumers --followed-consumer-group=snuba-consumers --delay-seconds=60 --schedule-ttl=60 --stale-threshold-seconds=900
+  snuba-subscription-consumer-sessions:
+    <<: *snuba_defaults
+    command: subscriptions-scheduler-executor --dataset sessions --entity sessions --auto-offset-reset=latest --no-strict-offset-reset --consumer-group=snuba-sessions-subscriptions-consumers --followed-consumer-group=sessions-group --delay-seconds=60 --schedule-ttl=60 --stale-threshold-seconds=900
   snuba-subscription-consumer-transactions:
     <<: *snuba_defaults
     command: subscriptions-scheduler-executor --dataset transactions --entity transactions --auto-offset-reset=latest --no-strict-offset-reset --consumer-group=snuba-transactions-subscriptions-consumers --followed-consumer-group=transactions_group --delay-seconds=60 --schedule-ttl=60 --stale-threshold-seconds=900
-  snuba-cleanup:
-    <<: *snuba_defaults
-    image: snuba-cleanup-self-hosted-local
-    build:
-      context: ./cron
-      args:
-        BASE_IMAGE: "$SNUBA_IMAGE"
-    command: '"*/5 * * * * snuba cleanup --storage errors --dry-run False"'
-  snuba-transactions-cleanup:
-    <<: *snuba_defaults
-    image: snuba-cleanup-self-hosted-local
-    build:
-      context: ./cron
-      args:
-        BASE_IMAGE: "$SNUBA_IMAGE"
-    command: '"*/5 * * * * snuba cleanup --storage transactions --dry-run False"'
   symbolicator:
     <<: *restart_policy
     image: "$SYMBOLICATOR_IMAGE"
@@ -319,10 +312,16 @@ services:
   ingest-consumer:
     <<: *sentry_defaults
     command: run ingest-consumer --all-consumer-types
-  post-process-forwarder:
+  ingest-replay-recordings:
     <<: *sentry_defaults
-    # Increase `--commit-batch-size 1` below to deal with high-load environments.
-    command: run post-process-forwarder --commit-batch-size 1
+    command: run ingest-replay-recordings
+  post-process-forwarder-errors:
+    <<: *sentry_defaults
+    command: run post-process-forwarder --entity errors
+
+  post-process-forwarder-transactions:
+    <<: *sentry_defaults
+    command: run post-process-forwarder --entity transactions --commit-log-topic=snuba-transactions-commit-log --synchronize-commit-group transactions_group
   subscription-consumer-events:
     <<: *sentry_defaults
     command: run query-subscription-consumer --commit-batch-size 1 --topic events-subscription-results

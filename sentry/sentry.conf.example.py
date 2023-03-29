@@ -3,6 +3,13 @@
 
 from sentry.conf.server import *  # NOQA
 
+BYTE_MULTIPLIER = 1024
+UNITS = ("K", "M", "G")
+def unit_text_to_bytes(text):
+    unit = text[-1].upper()
+    power = UNITS.index(unit) + 1
+    return float(text[:-1])*(BYTE_MULTIPLIER**power)
+
 
 # Generously adapted from pynetlinux: https://github.com/rlisagor/pynetlinux/blob/e3f16978855c6649685f0c43d4c3fcf768427ae5/pynetlinux/ifconfig.py#L197-L223
 def get_internal_network():
@@ -107,6 +114,9 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.memcached.MemcachedCache",
         "LOCATION": ["memcached:11211"],
         "TIMEOUT": 3600,
+        "OPTIONS": {
+            "server_max_value_length": unit_text_to_bytes(env("SENTRY_MAX_EXTERNAL_SOURCEMAP_SIZE", "1M")),
+        },
     }
 }
 
@@ -222,6 +232,7 @@ SENTRY_WEB_OPTIONS = {
 # header and enable the settings below
 
 # SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# USE_X_FORWARDED_HOST = True
 # SESSION_COOKIE_SECURE = True
 # CSRF_COOKIE_SECURE = True
 # SOCIAL_AUTH_REDIRECT_IS_HTTPS = True
@@ -257,6 +268,7 @@ SENTRY_FEATURES.update(
             "organizations:sso-saml2",
             "organizations:performance-view",
             "organizations:advanced-search",
+            "organizations:session-replay",
             "projects:custom-inbound-filters",
             "projects:data-forwarding",
             "projects:discard-groups",
