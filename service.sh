@@ -23,7 +23,7 @@ case "${1}" in
         done
         ;;
     update)
-        docker-compose pull
+        ./install.sh --skip-user-prompt --report-self-hosted-issues
         ;;
 esac
 

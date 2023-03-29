@@ -25,7 +25,7 @@ find ./ -mindepth 1 -maxdepth 1 -exec cp -rv '{}' "${deploy_dir}/{}" \;
 cd "${deploy_dir}"
 
 # Build the project.
-./install.sh --skip-user-prompt
+./service.sh update
 
 # Bring the project up.
 ./service.sh start
