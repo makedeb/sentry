@@ -34,8 +34,6 @@ function clean() {
     set -e
   fi
 
-  false "noooo"
-
   # Make sure they mean it.
   if [ "${FORCE_CLEAN:-}" == "1" ]; then
     echo "☠️  Seeing FORCE=1, forcing cleanup."
@@ -62,7 +60,8 @@ function clean() {
 }
 
 function backup() {
-  chmod +w $(pwd)/sentry
+  touch $(pwd)/sentry/backup.json
+  chmod 666 $(pwd)/sentry/backup.json
   docker-compose run -v $(pwd)/sentry:/sentry-data/backup --rm -T -e SENTRY_LOG_LEVEL=CRITICAL web export /sentry-data/backup/backup.json
 }
 

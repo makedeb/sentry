@@ -126,7 +126,8 @@ services:
         hard: 10032
   postgres:
     <<: *restart_policy
-    image: "postgres:9.6"
+    # Using the same postgres version as Sentry dev for consistency purposes
+    image: "postgres:14.5"
     healthcheck:
       <<: *healthcheck_defaults
       # Using default user "postgres" from sentry/sentry.conf.example.py or value of POSTGRES_USER if provided
@@ -324,10 +325,10 @@ services:
     command: run post-process-forwarder --entity transactions --commit-log-topic=snuba-transactions-commit-log --synchronize-commit-group transactions_group
   subscription-consumer-events:
     <<: *sentry_defaults
-    command: run query-subscription-consumer --commit-batch-size 1 --topic events-subscription-results
+    command: run query-subscription-consumer --topic events-subscription-results
   subscription-consumer-transactions:
     <<: *sentry_defaults
-    command: run query-subscription-consumer --commit-batch-size 1 --topic transactions-subscription-results
+    command: run query-subscription-consumer --topic transactions-subscription-results
   sentry-cleanup:
     <<: *sentry_defaults
     image: sentry-cleanup-self-hosted-local
